@@ -145,43 +145,39 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 24, background: '#f5f5f5', minHeight: '100vh' }}>
-      <div style={{ marginBottom: 16, padding: 12, background: '#fff', borderRadius: 8, fontSize: 13 }}>
-        <Space size={[8, 8]} wrap>
-          <span style={{ color: '#666', fontWeight: 600 }}>
-            📊 200 条表格数据 / 远程 options 各 200 条 — 性能优化演示
-          </span>
-          <Tag color="blue">报告类型 → select 原生复选框</Tag>
-          <Tag color="cyan">数据类型 → multiSelect 静态 + 全选</Tag>
-          <Tag color="geekblue">资产代码 → multiSelect 远程 200 条</Tag>
-          <Tag color="purple">产品名称 → multiSelect 远程 200 条 + 搜索防抖</Tag>
-          <Tag color="green">产品归属部门 → treeSelect 树形</Tag>
-          <Tag color="orange">报告期末日期 → dateRange</Tag>
-        </Space>
+    <div style={{
+      padding: 24,
+      background: '#f5f5f5',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+    }}>
+      {/* AdvancedTable 父容器：flex:1 自动填满剩余空间 */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <AdvancedTable
+          columns={columns}
+          dataSource={mockData}
+          loading={false}
+          rowKey="key"
+
+          toolbarLeft={
+            <>
+              <Button type="primary" icon={<PlusOutlined />}>新增</Button>
+              <Button icon={<AuditOutlined />}>审核</Button>
+              <Button icon={<UndoOutlined />}>反审核</Button>
+              <Button icon={<BugOutlined />}>调试</Button>
+              <Button icon={<SyncOutlined />}>更新至当期</Button>
+              <Button icon={<ImportOutlined />}>导入</Button>
+              <Button icon={<ExportOutlined />}>导出</Button>
+            </>
+          }
+
+          containerStyle={{ borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
+          onChange={handleRemoteChange}
+          pagination={{ pageSize: 200 }}  // 单页 200 条
+        />
       </div>
-
-      <AdvancedTable
-        columns={columns}
-        dataSource={mockData}
-        loading={false}
-        rowKey="key"
-
-        toolbarLeft={
-          <>
-            <Button type="primary" icon={<PlusOutlined />}>新增</Button>
-            <Button icon={<AuditOutlined />}>审核</Button>
-            <Button icon={<UndoOutlined />}>反审核</Button>
-            <Button icon={<BugOutlined />}>调试</Button>
-            <Button icon={<SyncOutlined />}>更新至当期</Button>
-            <Button icon={<ImportOutlined />}>导入</Button>
-            <Button icon={<ExportOutlined />}>导出</Button>
-          </>
-        }
-
-        containerStyle={{ borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
-        onChange={handleRemoteChange}
-        pagination={{ pageSize: 200 }}  // 单页 200 条
-      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Table, ConfigProvider, Tooltip } from 'antd';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Table, ConfigProvider, Tooltip, Pagination } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { FilterFilled, FilterOutlined } from '@ant-design/icons';
 import Toolbar from './Toolbar';
@@ -379,6 +379,20 @@ const AdvancedTable = ({
     }
   }, [filterValues, updateFilterValues, manualPagination, manualFilter]);
 
+  // ============ 独立 Pagination 的 onChange 适配 ============
+  const handlePaginationChange = useCallback((page, pageSize) => {
+    if (!manualPagination) {
+      setInnerPagination((prev) => {
+        const next = { ...prev, current: page, pageSize };
+        // 如果 pageSize 变了，current 可能超范围，回到第一页
+        const total = filteredData.length;
+        const maxPage = Math.max(1, Math.ceil(total / pageSize));
+        return { ...next, current: Math.min(page, maxPage) };
+      });
+    }
+    notifyRemoteChange(filterValues, sortValues, { current: page, pageSize });
+  }, [manualPagination, filteredData.length, filterValues, sortValues, notifyRemoteChange]);
+
   // ============ 列渲染：注入 antd 原生 filters ============
   const displayColumns = useMemo(() => {
     const ordered = columnOrder
@@ -480,10 +494,43 @@ const AdvancedTable = ({
     };
   }, [innerPagination, pagination, manualPagination, total, filteredData.length]);
 
+  // ============ Table 区域高度自适应 ============
+  // pagination 已拆出为独立组件放在外层 flex 底部，这里 scrollY 就是容器高度
+  const tableContainerRef = useRef(null);
+  const [scrollY, setScrollY] = useState(undefined);
+
+  useEffect(() => {
+    const el = tableContainerRef.current;
+    if (!el) return;
+
+    const compute = () => {
+      const h = el.clientHeight;
+      if (h > 0) setScrollY(Math.max(h - 2, 200));
+    };
+
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    compute();  // 立即算一次
+    return () => ro.disconnect();
+  }, []);
+
   // ============ 渲染 ============
   return (
     <ConfigProvider locale={zhCN}>
-      <div style={{ background: '#fff', borderRadius: 8, overflow: 'hidden', ...containerStyle }}>
+      {/* 外层：100% 高度 + flex 纵向布局 */}
+      <div
+        style={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          background: '#fff',
+          borderRadius: 8,
+          overflow: 'hidden',
+          ...containerStyle,
+        }}
+      >
+        {/* Toolbar：自然高度 */}
         <Toolbar
           columns={columnOrder.map((k) => columnKeyMap[k]).filter(Boolean)}
           visibleColumnKeys={visibleColumnKeys}
@@ -494,20 +541,54 @@ const AdvancedTable = ({
           rightSlot={toolbarRight}
         />
 
-        <Table
-          rowKey={rowKey}
-          loading={mergedLoading}
-          columns={displayColumns}
-          dataSource={manualPagination ? dataSource : pagedData}
-          size="middle"
-          scroll={{ x: 'max-content' }}
-          pagination={antdPagination}
-          sortDirections={['ascend', 'descend', null]}
-          style={{ borderTop: '1px solid #f0f0f0' }}
-          onHeaderRow={() => ({ style: { background: '#fafafa' } })}
-          onChange={handleTableChange}
-          {...tableProps}
-        />
+        {/* ✅ Table 区域：flex:1 自动填满剩余空间，内部表体滚动 */}
+        <div
+          ref={tableContainerRef}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            borderTop: '1px solid #f0f0f0',
+            overflow: 'hidden',   // 把 Table + 其 pagination 一起裁掉（因为我们要用独立的 Pagination）
+          }}
+        >
+          <Table
+            rowKey={rowKey}
+            loading={mergedLoading}
+            columns={displayColumns}
+            dataSource={manualPagination ? dataSource : pagedData}
+            size="middle"
+            scroll={{ x: 'max-content', y: scrollY }}
+            // 禁用 Table 内置 pagination，改用外层独立组件
+            pagination={false}
+            sortDirections={['ascend', 'descend', null]}
+            onHeaderRow={() => ({ style: { background: '#fafafa' } })}
+            onChange={handleTableChange}
+            {...tableProps}
+          />
+        </div>
+
+        {/* ✅ 独立 Pagination：flex-shrink:0 永远显示在底部 */}
+        {antdPagination !== false && (
+          <div
+            style={{
+              flexShrink: 0,
+              padding: '8px 16px',
+              borderTop: '1px solid #f0f0f0',
+              background: '#fafafa',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Pagination
+              {...antdPagination}
+              current={antdPagination.current ?? innerPagination.current}
+              pageSize={antdPagination.pageSize ?? innerPagination.pageSize}
+              onChange={handlePaginationChange}
+              showSizeChanger={antdPagination.showSizeChanger ?? true}
+              showQuickJumper={antdPagination.showQuickJumper ?? true}
+            />
+          </div>
+        )}
 
         <FilterDrawer
           open={drawerOpen}

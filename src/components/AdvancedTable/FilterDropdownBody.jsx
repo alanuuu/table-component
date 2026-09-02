@@ -95,12 +95,12 @@ const FilterDropdownBody = ({ filter, value, onChange, onConfirm, onReset }) => 
   const debouncedLoadMulti = useDebouncedFn(loadMultiOptions, 300);
 
   useEffect(() => {
-    console.log('[DEBUG FDB]', { type, hasLoadOptions: typeof filter.loadOptions === 'function', optionsLen: (filter.options||[]).length });
-    if ((type === 'multiSelect' || type === 'asyncSelect') && typeof filter.loadOptions === 'function' && !loadedOnceRef.current) {
-      loadedOnceRef.current = true;
+    // FilterDropdownBody 每次打开下拉都是新 mount（antd v6 filterDropdown 行为）
+    // 所以不需要 loadedOnceRef gate，直接加载
+    if ((type === 'multiSelect' || type === 'asyncSelect') && typeof filter.loadOptions === 'function') {
       loadMultiOptions();
     }
-  }, [type, filter, loadMultiOptions]);
+  }, []);  // 只在 mount 时执行一次
 
   useEffect(() => {
     if (type === 'treeSelect' && filter.treeData) {
