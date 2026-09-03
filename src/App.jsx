@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { Button, Space, Tag } from 'antd';
+import React, { useState, useMemo } from 'react';
+import { Button, Space, Tag, Tabs } from 'antd';
 import {
   PlusOutlined, AuditOutlined, UndoOutlined,
   BugOutlined, SyncOutlined, ImportOutlined, ExportOutlined,
 } from '@ant-design/icons';
-import AdvancedTable from './components/AdvancedTable';
+
+// 新组件（统一从 index.js 导出）
+import ProTable, { FilterForm } from './components/ProTable';
+
+
 import {
   mockData,
   remoteAssetCodeOptions,
@@ -14,6 +18,7 @@ import {
 } from './data/mockData';
 
 
+// ===================== 列配置（3 个 Tab 共用）=====================
 const columns = [
   {
     title: '报告类型',
@@ -56,7 +61,6 @@ const columns = [
     sortable: true,
     filter: {
       type: 'multiSelect',
-      // ✅ 远程加载 200 条 options，模拟接口延迟
       loadOptions: async (keyword) => {
         await new Promise((r) => setTimeout(r, 400));
         const list = remoteAssetCodeOptions;
@@ -64,7 +68,7 @@ const columns = [
         const kw = keyword.toLowerCase();
         return list.filter((o) => o.label.toLowerCase().includes(kw));
       },
-      placeholder: '远程加载中...（可搜索）',
+      placeholder: '资产代码',
     },
   },
   {
@@ -82,7 +86,7 @@ const columns = [
         const kw = keyword.toLowerCase();
         return list.filter((o) => o.label.toLowerCase().includes(kw));
       },
-      placeholder: '远程加载中...',
+      placeholder: '产品代码',
     },
   },
   {
@@ -100,7 +104,7 @@ const columns = [
         const kw = keyword.toLowerCase();
         return list.filter((o) => o.label.toLowerCase().includes(kw));
       },
-      placeholder: '远程加载中...',
+      placeholder: '产品名称',
     },
   },
   {
@@ -129,19 +133,27 @@ const columns = [
   },
 ];
 
+// ===================== 工具栏 slot =====================
+const toolbarLeftSlot = (
+  <>
+    <Button type="primary" icon={<PlusOutlined />}>新增</Button>
+    <Button icon={<AuditOutlined />}>审核</Button>
+    <Button icon={<UndoOutlined />}>反审核</Button>
+    <Button icon={<BugOutlined />}>调试</Button>
+    <Button icon={<SyncOutlined />}>更新至当期</Button>
+    <Button icon={<ImportOutlined />}>导入</Button>
+    <Button icon={<ExportOutlined />}>导出</Button>
+  </>
+);
+
 // ===================== 示例 App =====================
 function App() {
+  const [filterValues, setFilterValues] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const handleRemoteChange = (params) => {
-    console.log('[AdvancedTable] onChange', params);
-  };
-  const rowSelection = {
+  const rowSelection = useMemo(() => ({
     selectedRowKeys,
-    onChange: (newSelectedRowKeys) => {
-      console.log('selectedRowKeys changed: ', newSelectedRowKeys);
-      setSelectedRowKeys(newSelectedRowKeys);
-    }
-  };
+    onChange: setSelectedRowKeys,
+  }), [selectedRowKeys]);
 
   return (
     <div style={{
@@ -152,33 +164,27 @@ function App() {
       flexDirection: 'column',
       gap: 16,
     }}>
-      {/* AdvancedTable 父容器：flex:1 自动填满剩余空间 */}
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <AdvancedTable
-          columns={columns}
-          dataSource={mockData}
-          loading={false}
-          rowKey="key"
-          tableProps={{
-            rowSelection,
-          }}
-          toolbarLeft={
-            <>
-              <Button type="primary" icon={<PlusOutlined />}>新增</Button>
-              <Button icon={<AuditOutlined />}>审核</Button>
-              <Button icon={<UndoOutlined />}>反审核</Button>
-              <Button icon={<BugOutlined />}>调试</Button>
-              <Button icon={<SyncOutlined />}>更新至当期</Button>
-              <Button icon={<ImportOutlined />}>导入</Button>
-              <Button icon={<ExportOutlined />}>导出</Button>
-            </>
-          }
+      <FilterForm
+        columns={columns}
+        filterValues={filterValues}
+        onSubmit={setFilterValues}
+        onReset={() => setFilterValues({})}
+        collapsible
+        defaultCollapsedRows={1}
+        cols={3}
+      />
+      <ProTable
+        columns={columns}
+        dataSource={mockData}
+        loading={false}
+        rowKey="key"
+        tableProps={{ rowSelection }}
+        toolbarLeft={toolbarLeftSlot}
+        containerStyle={{ borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
+        onChange={(p) => console.log('[ProTable] onChange', p)}
+        pagination={{ pageSize: 200 }}
+      />
 
-          containerStyle={{ borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
-          onChange={handleRemoteChange}
-          pagination={{ pageSize: 200 }}  // 单页 200 条
-        />
-      </div>
     </div>
   );
 }
