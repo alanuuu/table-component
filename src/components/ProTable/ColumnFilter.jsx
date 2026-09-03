@@ -178,6 +178,11 @@ const ColumnFilter = ({ filter, value, onChange, onConfirm, onReset }) => {
   const showFooter = (type === 'multiSelect' || type === 'asyncSelect' || type === 'treeSelect')
     && filter.showAll !== false;
 
+  const handleConfirm = useCallback(() => {
+    if (showFooter) commitValue(innerValueRef.current);
+    onConfirm?.();
+  }, [commitValue, onConfirm, showFooter]);
+
   const scrollBoxStyle = {
     maxHeight: 240,
     overflowY: 'auto',
@@ -308,7 +313,7 @@ const ColumnFilter = ({ filter, value, onChange, onConfirm, onReset }) => {
           allowClear
           style={{ width: 240 }}
           onChange={(e) => onChange?.(e.target.value || null)}
-          onPressEnter={onConfirm}
+          onPressEnter={handleConfirm}
         />
       );
       break;
@@ -330,7 +335,7 @@ const ColumnFilter = ({ filter, value, onChange, onConfirm, onReset }) => {
             flatValues={flatValues}
             onToggleAll={handleToggleAll}
             onReset={handleReset}
-            onConfirm={onConfirm}
+            onConfirm={handleConfirm}
           />
         </div>
       )}

@@ -81,13 +81,3 @@ const Toolbar = ({
 
 export default Toolbar;
 
-// 过滤器图标渲染（供主组件 inject 到 antd columns）
-export const renderFilterIcon = (filtered) => (
-  <Tooltip title={filtered ? '已过滤' : '过滤'} mouseEnterDelay={0.5}>
-    {filtered ? (
-      <SearchOutlined style={{ color: '#1677ff', fontSize: 12 }} />
-    ) : (
-      <SearchOutlined style={{ fontSize: 12, color: '#bfbfbf' }} />
-    )}
-  </Tooltip>
-);

@@ -1,11 +1,40 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Table, ConfigProvider, Pagination } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
-import Toolbar, { renderFilterIcon } from './Toolbar';
+import { Table, Pagination, Tooltip } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import Toolbar from './Toolbar';
 import ColumnFilter from './ColumnFilter';
 import FilterDrawer from './FilterDrawer';
 import { useProTable } from './useProTable';
-import { extractFilterItems } from './utils';
+import { extractFilterItems, isEmptyFilterValue } from './utils';
+
+const getFilterOptionLabels = (options = [], values) => {
+  const valueList = Array.isArray(values) ? values : [values];
+  const flattenedOptions = options.flatMap((option) => [
+    option,
+    ...(option.children ? getFilterOptionObjects(option.children) : []),
+  ]);
+
+  return valueList.map((value) => {
+    const option = flattenedOptions.find((item) => item.value === value);
+    return option?.label ?? String(value);
+  });
+};
+
+const getFilterOptionObjects = (options = []) => options.flatMap((option) => [
+  option,
+  ...(option.children ? getFilterOptionObjects(option.children) : []),
+]);
+
+const getFilterTooltip = (value, filter) => {
+  if (isEmptyFilterValue(value)) return '查询';
+  if (filter?.type === 'dateRange' && value.start && value.end) {
+    return `${value.start} ~ ${value.end}`;
+  }
+  if (filter?.options || filter?.treeData) {
+    return getFilterOptionLabels(filter.options || filter.treeData, value).join(', ');
+  }
+  return Array.isArray(value) ? value.join(', ') : String(value);
+};
 
 /**
  * ProTable —— 基于 antd 的高级表格组件（新一代）
@@ -201,13 +230,26 @@ const ProTable = ({
     setInnerLoading(true);
     setTimeout(() => setInnerLoading(false), 500);
   }, [onRefresh]);
-
   // ============ 注入 antd 列过滤配置 ============
   const displayColumns = useMemo(() => {
+    const renderFilterIcon = (col) => () => {
+      const value = curFilterValues?.[col.dataIndex];
+      const filtered = !isEmptyFilterValue(value);
+
+      return <Tooltip title={getFilterTooltip(value, col.filter)} mouseEnterDelay={0.5}>
+        {filtered ? (
+          <SearchOutlined style={{ color: '#1677ff', fontSize: 12 }} />
+        ) : (
+          <SearchOutlined style={{ fontSize: 12, color: '#bfbfbf' }} />
+        )}
+      </Tooltip>
+    };
+
+
     return baseDisplayColumns.map((col) => {
       const colFilter = col.filter;
       if (!colFilter) {
-        return { ...col, filterIcon: renderFilterIcon };
+        return { ...col, filterIcon: renderFilterIcon(col) };
       }
 
       // select 类型 → 走 antd 原生 filters 复选框
@@ -215,14 +257,14 @@ const ProTable = ({
         return {
           ...col,
           filters: colFilter.options.map((o) => ({ text: o.label, value: o.value })),
-          filterIcon: renderFilterIcon,
+          filterIcon: renderFilterIcon(col),
         };
       }
 
       // 其他类型 → 自定义 filterDropdown
       return {
         ...col,
-        filterIcon: renderFilterIcon,
+        filterIcon: renderFilterIcon(col),
         filterDropdown: ({ confirm, close }) => (
           <ColumnFilter
             filter={colFilter}
@@ -258,7 +300,6 @@ const ProTable = ({
 
   // ============ 渲染 ============
   return (
-    <ConfigProvider locale={zhCN}>
       <div
         style={{
           height: '100%',
@@ -340,7 +381,6 @@ const ProTable = ({
           onReset={handleDrawerReset}
         />
       </div>
-    </ConfigProvider>
   );
 };
 
