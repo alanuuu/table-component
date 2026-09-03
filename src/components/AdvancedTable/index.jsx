@@ -558,7 +558,6 @@ const AdvancedTable = ({
             dataSource={manualPagination ? dataSource : pagedData}
             size="middle"
             scroll={{ x: 'max-content', y: scrollY }}
-            // 禁用 Table 内置 pagination，改用外层独立组件
             pagination={false}
             sortDirections={['ascend', 'descend', null]}
             onHeaderRow={() => ({ style: { background: '#fafafa' } })}

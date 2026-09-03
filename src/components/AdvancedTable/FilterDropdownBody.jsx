@@ -205,16 +205,17 @@ const FilterDropdownBody = ({ filter, value, onChange, onConfirm, onReset }) => 
           {...commonSelectProps}
           options={options}
           loading={optionsLoading}
-          showSearch
-          optionFilterProp="label"
-          virtual={options.length > 50}
-          onSearch={(kw) => {
-            setOptionsLoading(true);
-            if (typeof filter.loadOptions === 'function') {
-              debouncedLoadMulti(kw);
-            }
-            setTimeout(() => setOptionsLoading(false), 50);
+          showSearch={{
+            optionFilterProp: 'label',
+            onSearch: (kw) => {
+              setOptionsLoading(true);
+              if (typeof filter.loadOptions === 'function') {
+                debouncedLoadMulti(kw);
+              }
+              setTimeout(() => setOptionsLoading(false), 50);
+            },
           }}
+          virtual={options.length > 50}
         />
       );
       break;
@@ -227,8 +228,7 @@ const FilterDropdownBody = ({ filter, value, onChange, onConfirm, onReset }) => 
           treeCheckable={filter.treeCheckable !== false}
           treeDefaultExpandAll={filter.treeDefaultExpandAll !== false}
           treeLoadData={typeof filter.loadTreeData === 'function' ? onTreeLoadData : undefined}
-          showSearch
-          treeNodeFilterProp="label"
+          showSearch={{ treeNodeFilterProp: 'label' }}
           maxTagPlaceholder={(omitted) => <Tag>+{omitted.length}</Tag>}
           virtual
         />

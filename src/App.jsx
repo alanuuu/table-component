@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Button, Space, Tag } from 'antd';
 import {
   PlusOutlined, AuditOutlined, UndoOutlined,
@@ -12,16 +13,6 @@ import {
   remoteTreeData,
 } from './data/mockData';
 
-/**
- * 列 schema —— 完整类型演示（全部支持 200 条远程 options + 树形）
- *
- * filter.type 支持:
- *   select      → 静态 antd 原生复选框面板
- *   multiSelect → 多选列表 + 远程 loadOptions + 底部全选栏
- *   treeSelect  → 树形多选 + 底部全选栏
- *   dateRange   → 日期范围
- *   input       → 模糊搜索
- */
 
 const columns = [
   {
@@ -140,8 +131,16 @@ const columns = [
 
 // ===================== 示例 App =====================
 function App() {
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const handleRemoteChange = (params) => {
     console.log('[AdvancedTable] onChange', params);
+  };
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys) => {
+      console.log('selectedRowKeys changed: ', newSelectedRowKeys);
+      setSelectedRowKeys(newSelectedRowKeys);
+    }
   };
 
   return (
@@ -160,7 +159,9 @@ function App() {
           dataSource={mockData}
           loading={false}
           rowKey="key"
-
+          tableProps={{
+            rowSelection,
+          }}
           toolbarLeft={
             <>
               <Button type="primary" icon={<PlusOutlined />}>新增</Button>
